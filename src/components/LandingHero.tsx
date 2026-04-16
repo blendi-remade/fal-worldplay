@@ -292,6 +292,10 @@ export default function LandingHero({ onGenerate, worldHistory, characterHistory
                   <input type="range" min={5000} max={50000} step={5000} value={settings.charPolycount} onChange={(e) => setSettings({ ...settings, charPolycount: Number(e.target.value) })} className="w-full" style={{ accentColor: "var(--fal-purple-light)" }} />
                   <div className="flex justify-between text-[10px]" style={{ color: "var(--text-tertiary)" }}><span>5k</span><span>50k</span></div>
                 </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="tpose" checked={settings.charTPose} onChange={(e) => setSettings({ ...settings, charTPose: e.target.checked })} style={{ accentColor: "var(--fal-purple-light)" }} />
+                  <label htmlFor="tpose" className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>T-pose (better for rigging)</label>
+                </div>
                 <div>
                   <label className="block mb-1 text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Render quality: {settings.pixelRatio}x</label>
                   <input type="range" min={0.5} max={2} step={0.25} value={settings.pixelRatio} onChange={(e) => setSettings({ ...settings, pixelRatio: Number(e.target.value) })} className="w-full" style={{ accentColor: "var(--fal-purple-light)" }} />

@@ -176,52 +176,51 @@ export default function PlacementView({ state, onStart, onBack }: Props) {
         </div>
       </div>
 
-      {/* Bottom controls */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none">
-        <div className="max-w-lg mx-auto pointer-events-auto p-4" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: 10 }}>
+      {/* Right sidebar controls */}
+      <div className="absolute top-0 right-0 bottom-0 w-56 p-3 flex flex-col justify-center pointer-events-none">
+        <div className="pointer-events-auto p-3 space-y-3" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: 10 }}>
+          <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Place Character</p>
 
-          {/* Position sliders */}
-          <div className="grid grid-cols-3 gap-3 mb-3">
-            <div>
-              <label className="block mb-1 text-xs" style={{ color: "var(--text-secondary)" }}>X</label>
-              <input type="range" min={worldBounds.min} max={worldBounds.max} step={sliderStep} value={posX}
-                onChange={(e) => setPosX(Number(e.target.value))} className="w-full" style={{ accentColor: "var(--fal-red)" }} />
+          {[
+            { label: "X", color: "var(--fal-red)", value: posX, set: setPosX, min: worldBounds.min, max: worldBounds.max, step: sliderStep },
+            { label: "Y (height)", color: "var(--success)", value: posY, set: setPosY, min: worldBounds.min, max: worldBounds.max, step: sliderStep },
+            { label: "Z", color: "var(--fal-blue-light)", value: posZ, set: setPosZ, min: worldBounds.min, max: worldBounds.max, step: sliderStep },
+            { label: "Size", color: "var(--fal-purple-light)", value: scale, set: setScale, min: 0.001, max: 1, step: 0.001 },
+          ].map((s) => (
+            <div key={s.label}>
+              <label className="block mb-1 text-[10px]" style={{ color: s.color }}>{s.label}</label>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => s.set(Math.max(s.min, s.value - s.step))}
+                  className="shrink-0 w-5 h-5 flex items-center justify-center text-xs transition-colors duration-100"
+                  style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-color)", borderRadius: 4, color: "var(--text-secondary)" }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--border-color-hover)"}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border-color)"}
+                >&minus;</button>
+                <input type="range" min={s.min} max={s.max} step={s.step} value={s.value}
+                  onChange={(e) => s.set(Number(e.target.value))} className="w-full" style={{ accentColor: s.color }} />
+                <button
+                  onClick={() => s.set(Math.min(s.max, s.value + s.step))}
+                  className="shrink-0 w-5 h-5 flex items-center justify-center text-xs transition-colors duration-100"
+                  style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-color)", borderRadius: 4, color: "var(--text-secondary)" }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--border-color-hover)"}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border-color)"}
+                >+</button>
+              </div>
             </div>
-            <div>
-              <label className="block mb-1 text-xs" style={{ color: "var(--text-secondary)" }}>Y (height)</label>
-              <input type="range" min={worldBounds.min} max={worldBounds.max} step={sliderStep} value={posY}
-                onChange={(e) => setPosY(Number(e.target.value))} className="w-full" style={{ accentColor: "var(--success)" }} />
-            </div>
-            <div>
-              <label className="block mb-1 text-xs" style={{ color: "var(--text-secondary)" }}>Z</label>
-              <input type="range" min={worldBounds.min} max={worldBounds.max} step={sliderStep} value={posZ}
-                onChange={(e) => setPosZ(Number(e.target.value))} className="w-full" style={{ accentColor: "var(--fal-blue-light)" }} />
-            </div>
-          </div>
+          ))}
 
-          {/* Scale slider */}
-          <div className="mb-3">
-            <label className="block mb-1 text-xs" style={{ color: "var(--text-secondary)" }}>Size</label>
-            <input type="range" min={0.001} max={1} step={0.001} value={scale}
-              onChange={(e) => setScale(Number(e.target.value))} className="w-full" style={{ accentColor: "var(--fal-purple-light)" }} />
-            <div className="flex justify-between text-[10px]" style={{ color: "var(--text-tertiary)" }}>
-              <span>Tiny</span>
-              <span>Large</span>
-            </div>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-2">
-            <button onClick={onBack} className="px-4 py-2 text-sm transition-all duration-150"
-              style={{ background: "transparent", border: "1px solid var(--border-color)", borderRadius: 6, color: "var(--text-tertiary)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-color-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.color = "var(--text-tertiary)"; }}
-            >Back</button>
-            <button onClick={handleStart} className="flex-1 py-2 text-sm font-medium transition-all duration-150"
+          <div className="flex flex-col gap-2 pt-1">
+            <button onClick={handleStart} className="w-full py-2 text-sm font-medium transition-all duration-150"
               style={{ background: "var(--fal-cyan)", color: "white", borderRadius: 6, border: "1px solid rgba(255,255,255,0.15)" }}
               onMouseEnter={(e) => e.currentTarget.style.background = "var(--fal-blue-light)"}
               onMouseLeave={(e) => e.currentTarget.style.background = "var(--fal-cyan)"}
             >Start Playing</button>
+            <button onClick={onBack} className="w-full py-1.5 text-xs transition-all duration-150"
+              style={{ background: "transparent", border: "1px solid var(--border-color)", borderRadius: 6, color: "var(--text-tertiary)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-color-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.color = "var(--text-tertiary)"; }}
+            >Back</button>
           </div>
         </div>
       </div>

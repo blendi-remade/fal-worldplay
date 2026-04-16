@@ -62,6 +62,7 @@ export interface GenerationSettings {
   worldModel: "marble-1.1" | "marble-1.1-plus";
   splatQuality: "500k" | "full_res";
   charPolycount: number;
+  charTPose: boolean;
   pixelRatio: number;
 }
 
@@ -69,6 +70,7 @@ export const DEFAULT_SETTINGS: GenerationSettings = {
   worldModel: "marble-1.1-plus",
   splatQuality: "500k",
   charPolycount: 30000,
+  charTPose: false,
   pixelRatio: 1,
 };
 

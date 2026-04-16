@@ -107,7 +107,7 @@ export function useAppState() {
         const res = await fetch("/api/generate-character", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: prompt || undefined, imageUrl, polycount }),
+          body: JSON.stringify({ prompt: prompt || undefined, imageUrl, polycount, tPose: settings?.charTPose ?? false }),
         });
         if (!res.ok) throw new Error(await res.text());
         const { request_id, endpoint } = await res.json();

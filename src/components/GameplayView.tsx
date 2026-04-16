@@ -401,7 +401,7 @@ export default function GameplayView({ state, onExit }: Props) {
           camDistance * Math.cos(yaw) * Math.cos(pitch)
         );
         const targetCamPos = characterModel.position.clone().add(camOffset);
-        camera.position.lerp(targetCamPos, 0.1);
+        camera.position.copy(targetCamPos);
 
         const lookTarget = characterModel.position.clone();
         lookTarget.y += charHeight * 0.7;
