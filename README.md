@@ -9,7 +9,8 @@ WorldPlay combines [World Labs](https://worldlabs.ai) world generation with [Mes
 ### Generated World
 
 <!-- Drag and drop your world screenshot here -->
-![Generated World](screenshots/world.png)
+<img width="1414" height="956" alt="Screenshot 2026-04-16 131915" src="https://github.com/user-attachments/assets/e50467fc-3338-424c-8130-a0d032cb3888" />
+
 
 ### Generated Character
 
