@@ -9,17 +9,18 @@ WorldPlay combines [World Labs](https://worldlabs.ai) world generation with [Mes
 ### Generated World
 
 <!-- Drag and drop your world screenshot here -->
-![Generated World](screenshots/world.png)
+<img width="1414" height="956" alt="Screenshot 2026-04-16 131915" src="https://github.com/user-attachments/assets/e50467fc-3338-424c-8130-a0d032cb3888" />
+
 
 ### Generated Character
 
 <!-- Drag and drop your character screenshot here -->
-![Generated Character](screenshots/character.png)
+<img width="1219" height="1029" alt="Screenshot 2026-04-16 131926" src="https://github.com/user-attachments/assets/ad2a7f01-2616-45f9-8a8b-b4427058e091" />
 
 ### Character in the World
 
 <!-- Drag and drop your gameplay screenshot here -->
-![Character in World](screenshots/gameplay.png)
+<img width="2859" height="1497" alt="Screenshot 2026-04-16 132529" src="https://github.com/user-attachments/assets/8e9f01a2-a283-4193-a21f-0560d10ed175" />
 
 ## How It Works
 
