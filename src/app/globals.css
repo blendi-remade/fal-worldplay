@@ -1,26 +1,120 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Fal brand colors */
+  --fal-purple-deep: #5718c0;
+  --fal-purple-light: #ab77ff;
+  --fal-pink: #e366af;
+  --fal-red: #ec0648;
+  --fal-cyan: #38acc6;
+  --fal-blue-light: #3fb5fe;
+  --fal-blue: #115ef3;
+
+  /* Theme — dark surfaces, layered */
+  --bg-primary: #0a0a0b;
+  --bg-secondary: #141416;
+  --bg-tertiary: #1c1c20;
+  --bg-elevated: #242428;
+
+  /* Borders — visible on dark surfaces */
+  --border-color: rgba(255, 255, 255, 0.12);
+  --border-color-hover: rgba(255, 255, 255, 0.22);
+
+  /* Text — white at varying opacity */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+
+  /* Functional */
+  --success: #22c55e;
+  --warning: #eab308;
+  --error: #ef4444;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+/* --- Fal spinner --- */
+.fal-spinner {
+  animation: fal-spin 4s ease-in-out infinite;
+}
+
+@keyframes fal-spin {
+  0%   { transform: rotate(0deg);    fill: #5718c0; }
+  20%  { transform: rotate(360deg);  fill: #ab77ff; }
+  25%  { transform: rotate(360deg);  fill: #e366af; }
+  45%  { transform: rotate(720deg);  fill: #ec0648; }
+  50%  { transform: rotate(720deg);  fill: #ab77ff; }
+  70%  { transform: rotate(1080deg); fill: #38acc6; }
+  75%  { transform: rotate(1080deg); fill: #3fb5fe; }
+  95%  { transform: rotate(1440deg); fill: #115ef3; }
+  100% { transform: rotate(1440deg); fill: #5718c0; }
+}
+
+/* Fallback ring spinner */
+.spinner-ring {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--fal-purple-light);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Loading layouts --- */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2.5rem;
+  color: var(--text-secondary);
+}
+
+.loading-text {
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+/* --- Progress bar --- */
+@keyframes progress {
+  0% { width: 5%; }
+  50% { width: 60%; }
+  100% { width: 95%; }
+}
+
+.animate-progress {
+  animation: progress 30s ease-in-out infinite;
+}
+
+/* --- Fade in --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
 }
