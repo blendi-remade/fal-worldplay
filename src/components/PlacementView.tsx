@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { SparkRenderer, SplatMesh } from "@sparkjsdev/spark";
 import type { GenerationState } from "@/lib/types";
@@ -23,10 +22,23 @@ export default function PlacementView({ state, onStart, onBack }: Props) {
 
   const charModelRef = useRef<THREE.Object3D | null>(null);
   const rawCharHeightRef = useRef(1);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
 
   const handleStart = useCallback(() => {
     onStart([posX, posY, posZ], scale);
   }, [posX, posY, posZ, scale, onStart]);
+
+  const handlePlaceAtCamera = useCallback(() => {
+    const cam = cameraRef.current;
+    if (!cam) return;
+    // Place character at camera position
+    setPosX(cam.position.x);
+    setPosY(cam.position.y);
+    setPosZ(cam.position.z);
+    // Step camera back so the character is visible in front of you
+    const back = new THREE.Vector3(0, 0, 1).applyQuaternion(cam.quaternion);
+    cam.position.addScaledVector(back, 1.5);
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -36,6 +48,7 @@ export default function PlacementView({ state, onStart, onBack }: Props) {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(65, container.clientWidth / container.clientHeight, 0.001, 1000);
+    cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: state.settings.pixelRatio >= 1 });
     renderer.setSize(container.clientWidth, container.clientHeight);
@@ -61,11 +74,40 @@ export default function PlacementView({ state, onStart, onBack }: Props) {
       : (spzUrls?.["500k"] ?? spzUrls?.full_res);
     if (splatUrl) worldRoot.add(new SplatMesh({ url: splatUrl }));
 
-    // Orbit controls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.minDistance = 0;
+    // Fly controls: drag to look, WASD to move, scroll to zoom
+    let yaw = 0;
+    let pitch = 0;
+    const flyKeys: Record<string, boolean> = {};
+    const FLY_SPEED = 0.5;
+    const ZOOM_STEP = 0.4;
+    const MOUSE_SENS = 0.003;
+    let isDragging = false;
+
+    const onPointerDown = (e: PointerEvent) => {
+      isDragging = true;
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    };
+    const onPointerUp = () => { isDragging = false; };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isDragging) return;
+      yaw -= e.movementX * MOUSE_SENS;
+      pitch -= e.movementY * MOUSE_SENS;
+      pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitch));
+    };
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      camera.position.addScaledVector(dir, e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
+    };
+    const onFlyKeyDown = (e: KeyboardEvent) => { flyKeys[e.code] = true; };
+    const onFlyKeyUp = (e: KeyboardEvent) => { flyKeys[e.code] = false; };
+
+    renderer.domElement.addEventListener("pointerdown", onPointerDown);
+    renderer.domElement.addEventListener("pointerup", onPointerUp);
+    renderer.domElement.addEventListener("pointermove", onPointerMove);
+    renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onFlyKeyDown);
+    window.addEventListener("keyup", onFlyKeyUp);
 
     const gltfLoader = new GLTFLoader();
 
@@ -91,11 +133,8 @@ export default function PlacementView({ state, onStart, onBack }: Props) {
         setPosY(center.y);
         setPosZ(center.z);
 
-        // Camera
+        // Camera at world center
         camera.position.copy(center);
-        camera.position.z += maxDim * 0.3;
-        controls.target.copy(center);
-        controls.maxDistance = maxDim * 2;
       });
     }
 
@@ -130,7 +169,21 @@ export default function PlacementView({ state, onStart, onBack }: Props) {
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
-      controls.update();
+
+      // Apply yaw/pitch
+      const euler = new THREE.Euler(pitch, yaw, 0, "YXZ");
+      camera.quaternion.setFromEuler(euler);
+
+      // WASD fly
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+      if (flyKeys["KeyW"]) camera.position.addScaledVector(forward, FLY_SPEED * 0.016);
+      if (flyKeys["KeyS"]) camera.position.addScaledVector(forward, -FLY_SPEED * 0.016);
+      if (flyKeys["KeyD"]) camera.position.addScaledVector(right, FLY_SPEED * 0.016);
+      if (flyKeys["KeyA"]) camera.position.addScaledVector(right, -FLY_SPEED * 0.016);
+      if (flyKeys["KeyQ"]) camera.position.y -= FLY_SPEED * 0.016;
+      if (flyKeys["KeyE"]) camera.position.y += FLY_SPEED * 0.016;
+
       mixer?.update(clock.getDelta());
       renderer.render(scene, camera);
     };
@@ -140,7 +193,12 @@ export default function PlacementView({ state, onStart, onBack }: Props) {
       destroyed = true;
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", onResize);
-      controls.dispose();
+      window.removeEventListener("keydown", onFlyKeyDown);
+      window.removeEventListener("keyup", onFlyKeyUp);
+      renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("pointerup", onPointerUp);
+      renderer.domElement.removeEventListener("pointermove", onPointerMove);
+      renderer.domElement.removeEventListener("wheel", onWheel);
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -171,7 +229,7 @@ export default function PlacementView({ state, onStart, onBack }: Props) {
       <div className="absolute top-0 left-0 right-0 p-3 pointer-events-none">
         <div className="pointer-events-auto inline-block px-3 py-1.5" style={{ background: "rgba(10,10,11,0.7)", border: "1px solid var(--border-color)", borderRadius: 6 }}>
           <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-            Drag to orbit, scroll to zoom. Use sliders to position and size your character.
+            Drag to look. WASD to fly. Q/E up/down. Scroll to zoom. Navigate inside, then place your character.
           </p>
         </div>
       </div>
@@ -180,6 +238,14 @@ export default function PlacementView({ state, onStart, onBack }: Props) {
       <div className="absolute top-0 right-0 bottom-0 w-56 p-3 flex flex-col justify-center pointer-events-none">
         <div className="pointer-events-auto p-3 space-y-3" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: 10 }}>
           <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Place Character</p>
+
+          <button
+            onClick={handlePlaceAtCamera}
+            className="w-full py-1.5 text-xs font-medium transition-all duration-150 mb-1"
+            style={{ background: "var(--fal-purple-deep)", color: "white", borderRadius: 6, border: "1px solid rgba(255,255,255,0.15)" }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "var(--fal-purple-light)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "var(--fal-purple-deep)"}
+          >Place at camera</button>
 
           {[
             { label: "X", color: "var(--fal-red)", value: posX, set: setPosX, min: worldBounds.min, max: worldBounds.max, step: sliderStep },

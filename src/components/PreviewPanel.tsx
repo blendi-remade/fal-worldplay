@@ -29,7 +29,7 @@ export default function PreviewPanel({ state, onEnterWorld }: Props) {
       <div className="flex items-center justify-between px-5 py-2.5" style={{ borderBottom: "1px solid var(--border-color)", background: "var(--bg-secondary)" }}>
         <div>
           <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Preview</h2>
-          <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Scroll to zoom inside the world. Drag to orbit. Enter world for third-person gameplay.</p>
+          <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Drag to look. WASD to fly. Q/E up/down. Scroll to zoom.</p>
         </div>
         <button
           onClick={onEnterWorld}

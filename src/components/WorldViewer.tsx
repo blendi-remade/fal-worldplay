@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { SparkRenderer, SplatMesh } from "@sparkjsdev/spark";
 
@@ -12,6 +11,7 @@ interface Props {
   className?: string;
 }
 
+// Fly controls: drag to look, WASD to move, scroll to zoom
 export default function WorldViewer({ splatUrl, colliderMeshUrl, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -21,12 +21,7 @@ export default function WorldViewer({ splatUrl, colliderMeshUrl, className }: Pr
     if (!container) return;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      60,
-      container.clientWidth / container.clientHeight,
-      0.001,
-      1000
-    );
+    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.001, 1000);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
@@ -38,51 +33,67 @@ export default function WorldViewer({ splatUrl, colliderMeshUrl, className }: Pr
     const spark = new SparkRenderer({ renderer });
     scene.add(spark);
 
-    // Load splat — flip Y for World Labs orientation
+    // Load splat
     const worldRoot = new THREE.Group();
     worldRoot.scale.set(1, -1, 1);
     scene.add(worldRoot);
-    const splat = new SplatMesh({ url: splatUrl });
-    worldRoot.add(splat);
-
-    // Orbit controls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    // Start with a small max distance so orbit stays inside
-    controls.maxDistance = 2;
+    worldRoot.add(new SplatMesh({ url: splatUrl }));
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
-    // Load collider mesh to find the interior center
+    // --- Fly camera state ---
+    let yaw = 0;
+    let pitch = 0;
+    const keys: Record<string, boolean> = {};
+    const FLY_SPEED = 0.5;
+    const ZOOM_STEP = 0.4;
+    const MOUSE_SENS = 0.003;
+    let isDragging = false;
+
+    // Load collider to find center
     if (colliderMeshUrl) {
       const loader = new GLTFLoader();
       loader.load(colliderMeshUrl, (gltf) => {
         const collider = gltf.scene;
-        // Apply same Y-flip to get coordinates in scene space
         collider.scale.set(1, -1, 1);
         collider.updateMatrixWorld(true);
-
         const box = new THREE.Box3().setFromObject(collider);
         const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-
-        // Position camera and orbit target at world center
         camera.position.copy(center);
-        controls.target.copy(center);
-        camera.position.z += maxDim * 0.05;
-
-        controls.maxDistance = maxDim * 0.5;
-        controls.minDistance = 0;
-
-        // Don't add collider to scene — we only needed it for measurement
       });
-    } else {
-      // Fallback: position camera at origin (often near the interior)
-      camera.position.set(0, 0, 0.1);
-      controls.target.set(0, 0, 0);
     }
+
+    // --- Mouse drag to look ---
+    const onPointerDown = (e: PointerEvent) => {
+      isDragging = true;
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    };
+    const onPointerUp = () => { isDragging = false; };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isDragging) return;
+      yaw -= e.movementX * MOUSE_SENS;
+      pitch -= e.movementY * MOUSE_SENS;
+      pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitch));
+    };
+
+    // --- Scroll to move forward/back ---
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      const move = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+      camera.position.addScaledVector(dir, move);
+    };
+
+    // --- WASD ---
+    const onKeyDown = (e: KeyboardEvent) => { keys[e.code] = true; };
+    const onKeyUp = (e: KeyboardEvent) => { keys[e.code] = false; };
+
+    renderer.domElement.addEventListener("pointerdown", onPointerDown);
+    renderer.domElement.addEventListener("pointerup", onPointerUp);
+    renderer.domElement.addEventListener("pointermove", onPointerMove);
+    renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
 
     // Resize
     const onResize = () => {
@@ -92,10 +103,25 @@ export default function WorldViewer({ splatUrl, colliderMeshUrl, className }: Pr
     };
     window.addEventListener("resize", onResize);
 
+    // Render loop
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
-      controls.update();
+
+      // Apply yaw/pitch to camera
+      const euler = new THREE.Euler(pitch, yaw, 0, "YXZ");
+      camera.quaternion.setFromEuler(euler);
+
+      // WASD movement relative to camera direction
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+      if (keys["KeyW"]) camera.position.addScaledVector(forward, FLY_SPEED * 0.016);
+      if (keys["KeyS"]) camera.position.addScaledVector(forward, -FLY_SPEED * 0.016);
+      if (keys["KeyD"]) camera.position.addScaledVector(right, FLY_SPEED * 0.016);
+      if (keys["KeyA"]) camera.position.addScaledVector(right, -FLY_SPEED * 0.016);
+      if (keys["KeyQ"]) camera.position.y -= FLY_SPEED * 0.016;
+      if (keys["KeyE"]) camera.position.y += FLY_SPEED * 0.016;
+
       renderer.render(scene, camera);
     };
     animate();
@@ -103,7 +129,12 @@ export default function WorldViewer({ splatUrl, colliderMeshUrl, className }: Pr
     cleanupRef.current = () => {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", onResize);
-      controls.dispose();
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("pointerup", onPointerUp);
+      renderer.domElement.removeEventListener("pointermove", onPointerMove);
+      renderer.domElement.removeEventListener("wheel", onWheel);
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
